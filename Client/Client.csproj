@@ -5,4 +5,8 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Include="..\Libs.cs" Link="Libs.cs" />
+  </ItemGroup>
+
 </Project>
