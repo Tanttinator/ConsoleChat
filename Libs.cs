@@ -1,8 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 public static class Libs
 {
+
+    public const int PORT = 13;
+
     /// <summary>
     /// Parses an inputted command.
     /// </summary>
@@ -13,9 +17,7 @@ public static class Libs
 
         string commandName = parts[0];
 
-        string[] args = new string[parts.Length - 1];
-        if (args.Length > 0)
-            args.CopyTo(parts, 1);
+        string[] args = parts.Skip(1).ToArray();
 
         Command command;
         if (commands.TryGetValue(commandName.ToLower(), out command))

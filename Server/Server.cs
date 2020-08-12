@@ -1,5 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Net;
+using System.Net.Sockets;
+using System.Threading;
 
 namespace Server
 {
@@ -9,6 +12,9 @@ namespace Server
 
         static bool exit = false;
 
+        static object _lock = new object();
+        static Dictionary<int, TcpClient> connections = new Dictionary<int, TcpClient>();
+
         static void Main(string[] args)
         {
             Console.WriteLine("CONSOLECHAT DEDICATED SERVER");
@@ -16,20 +22,68 @@ namespace Server
             commands = new Dictionary<string, Command>();
             commands.Add("exit", new Command(CommandExit));
 
+            TcpListener listener = new TcpListener(IPAddress.Any, Libs.PORT);
+            listener.Start();
+            Console.WriteLine("Server started.");
+
+            Thread inputThread = new Thread(InputHandler);
+            inputThread.Start();
+
+            int count = 0;
+
             while (!exit)
             {
-                Console.Write(">");
-                HandleInput(Console.ReadLine());
+                TcpClient client = listener.AcceptTcpClient();
+                lock (_lock) connections.Add(count, client);
+                Console.WriteLine("New connection from " + ((IPEndPoint)client.Client.RemoteEndPoint).Address.ToString());
+
+                Thread t = new Thread(ConnectionHandler);
+                t.Start(count++);
             }
 
             Console.WriteLine("Shutting down...");
         }
 
         /// <summary>
+        /// Handle messaging with a single connection.
+        /// </summary>
+        /// <param name="o"></param>
+        static void ConnectionHandler(object o)
+        {
+            int id = (int)o;
+            TcpClient connection;
+
+            lock (_lock) connection = connections[id];
+
+            while(!exit)
+            {
+
+            }
+
+            lock (_lock) connections.Remove(id);
+            connection.Client.Shutdown(SocketShutdown.Both);
+            connection.Close();
+            Console.WriteLine("Client disconnected!");
+        }
+
+        /// <summary>
+        /// Thread for handling inputs by the host.
+        /// </summary>
+        /// <param name="o"></param>
+        static void InputHandler()
+        {
+            while(!exit)
+            {
+                Console.Write(">");
+                InputParser(Console.ReadLine());
+            }
+        }
+
+        /// <summary>
         /// Parses user input and decides what to do with it.
         /// </summary>
         /// <param name="input"></param>
-        static void HandleInput(string input)
+        static void InputParser(string input)
         {
             if (input.Trim().StartsWith("/"))
             {
@@ -41,6 +95,8 @@ namespace Server
             }
         }
 
+        #region Commands
+
         /// <summary>
         /// Tells the program to stop.
         /// </summary>
@@ -49,5 +105,7 @@ namespace Server
         {
             exit = true;
         }
+
+        #endregion
     }
 }
