@@ -7,18 +7,22 @@ namespace Server
     {
         static Dictionary<string, Command> commands;
 
+        static bool exit = false;
+
         static void Main(string[] args)
         {
             Console.WriteLine("CONSOLECHAT DEDICATED SERVER");
 
             commands = new Dictionary<string, Command>();
-            commands.Add("test", new Command(CommandTest));
+            commands.Add("exit", new Command(CommandExit));
 
-            while (true)
+            while (!exit)
             {
                 Console.Write(">");
                 HandleInput(Console.ReadLine());
             }
+
+            Console.WriteLine("Shutting down...");
         }
 
         /// <summary>
@@ -38,12 +42,12 @@ namespace Server
         }
 
         /// <summary>
-        /// Simple test command.
+        /// Tells the program to stop.
         /// </summary>
         /// <param name="args"></param>
-        static void CommandTest(string[] args)
+        static void CommandExit(string[] args)
         {
-            Console.WriteLine("Test command called!");
+            exit = true;
         }
     }
 }
