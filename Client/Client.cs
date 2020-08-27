@@ -21,15 +21,14 @@ namespace Client
             commands = new Dictionary<string, Command>();
             commands.Add("exit", new Command(CommandExit));
             commands.Add("connect", new Command(CommandConnect));
-
-            client = new TcpClient();
+            commands.Add("disconnect", new Command(CommandDisconnect));
 
             while(!exit)
             {
                 InputParser(Console.ReadLine());
             }
 
-            client.Close();
+            Disconnect();
             Console.WriteLine("Shutting down...");
         }
 
@@ -37,7 +36,7 @@ namespace Client
         /// Handle messaging with the server.
         /// </summary>
         /// <param name="o"></param>
-        static void ConnectionHandler()
+        static void ConnectionListener()
         {
             NetworkStream stream = client.GetStream();
             byte[] buffer = new byte[client.ReceiveBufferSize];
@@ -45,13 +44,15 @@ namespace Client
             while (!exit)
             {
                 int bytesRead = stream.Read(buffer, 0, client.ReceiveBufferSize);
+
+                if (bytesRead == 0) break;
+
                 string data = Encoding.ASCII.GetString(buffer, 0, bytesRead);
                 Console.WriteLine(data);
             }
 
-            client.Client.Shutdown(SocketShutdown.Both);
-            client.Close();
-            Console.WriteLine("Disconnected!");
+            stream.Close();
+            Disconnect();
         }
 
         /// <summary>
@@ -71,6 +72,40 @@ namespace Client
                     Libs.SendMessage(client.GetStream(), input);
                 }
             }
+        }
+
+        /// <summary>
+        /// Try to connect to a server.
+        /// </summary>
+        /// <param name="address"></param>
+        static void Connect(string address)
+        {
+            Console.WriteLine("Trying to connect to " + address + "...");
+
+            client = new TcpClient();
+
+            try
+            {
+                client.Connect(address, Libs.PORT);
+                new Thread(ConnectionListener).Start();
+                Console.WriteLine("Connected!");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Connection failed!");
+            }
+        }
+
+        /// <summary>
+        /// Disconnect from the current server.
+        /// </summary>
+        static void Disconnect()
+        {
+            if(!client.Connected) return;
+
+            client.Client.Shutdown(SocketShutdown.Both);
+            client.Close();
+            Console.WriteLine("Disconnected!");
         }
 
         #region Commands
@@ -93,22 +128,27 @@ namespace Client
             if(args.Length > 0)
             {
                 string address = args[0];
-                Console.WriteLine("Trying to connect to " + address + "...");
-                try
-                {
-                    client.Connect(address, Libs.PORT);
-                    new Thread(ConnectionHandler).Start();
-                    Console.WriteLine("Connected!");
-                } 
-                catch(Exception e)
-                {
-                    Console.WriteLine("Connection failed!");
-                }
+                Connect(address);
             } 
             else
             {
                 Console.WriteLine("Invalid number of arguments!");
             }
+        }
+
+        /// <summary>
+        /// Disconnect from the current server.
+        /// </summary>
+        /// <param name="args"></param>
+        static void CommandDisconnect(string[] args)
+        {
+            if(!client.Connected)
+            {
+                Console.WriteLine("Not connected to any server!");
+                return;
+            }
+
+            Disconnect();
         }
 
         #endregion
