@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 using System.Threading;
 
 namespace Server
@@ -13,7 +14,7 @@ namespace Server
         static bool exit = false;
 
         static object _lock = new object();
-        static Dictionary<int, TcpClient> connections = new Dictionary<int, TcpClient>();
+        static Dictionary<int, TcpClient> clients = new Dictionary<int, TcpClient>();
 
         static void Main(string[] args)
         {
@@ -34,7 +35,7 @@ namespace Server
             while (!exit)
             {
                 TcpClient client = listener.AcceptTcpClient();
-                lock (_lock) connections.Add(count, client);
+                lock (_lock) clients.Add(count, client);
                 Console.WriteLine("New connection from " + ((IPEndPoint)client.Client.RemoteEndPoint).Address.ToString());
 
                 Thread t = new Thread(ConnectionHandler);
@@ -45,25 +46,44 @@ namespace Server
         }
 
         /// <summary>
-        /// Handle messaging with a single connection.
+        /// Handle messaging with a single client.
         /// </summary>
         /// <param name="o"></param>
         static void ConnectionHandler(object o)
         {
             int id = (int)o;
-            TcpClient connection;
+            TcpClient client;
 
-            lock (_lock) connection = connections[id];
+            lock (_lock) client = clients[id];
+
+            NetworkStream stream = client.GetStream();
+            byte[] buffer = new byte[client.ReceiveBufferSize];
 
             while(!exit)
             {
-
+                int bytesRead = stream.Read(buffer, 0, client.ReceiveBufferSize);
+                string data = Encoding.ASCII.GetString(buffer, 0, bytesRead);
+                ReceiveMessage(id, data);
             }
 
-            lock (_lock) connections.Remove(id);
-            connection.Client.Shutdown(SocketShutdown.Both);
-            connection.Close();
+            lock (_lock) clients.Remove(id);
+            client.Client.Shutdown(SocketShutdown.Both);
+            client.Close();
             Console.WriteLine("Client disconnected!");
+        }
+
+        /// <summary>
+        /// Relay a message sent by one client to the other clients.
+        /// </summary>
+        /// <param name="client"></param>
+        /// <param name="message"></param>
+        static void ReceiveMessage(int client, string message)
+        {
+            Console.WriteLine(message);
+            foreach(int otherClient in clients.Keys)
+            {
+                if (otherClient != client) Libs.SendMessage(clients[otherClient].GetStream(), message);
+            }
         }
 
         /// <summary>
@@ -74,7 +94,6 @@ namespace Server
         {
             while(!exit)
             {
-                Console.Write(">");
                 InputParser(Console.ReadLine());
             }
         }
@@ -91,7 +110,7 @@ namespace Server
             }
             else
             {
-                Console.WriteLine(input);
+                foreach (TcpClient client in clients.Values) Libs.SendMessage(client.GetStream(), input);
             }
         }
 

@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Sockets;
+using System.Text;
 
 public static class Libs
 {
@@ -28,6 +30,17 @@ public static class Libs
         {
             Console.WriteLine("Unknown command \"" + commandName + "\"");
         }
+    }
+
+    /// <summary>
+    /// Send a message to the given stream.
+    /// </summary>
+    /// <param name="stream"></param>
+    /// <param name="message"></param>
+    public static void SendMessage(NetworkStream stream, string message)
+    {
+        byte[] bytes = ASCIIEncoding.ASCII.GetBytes(message);
+        stream.Write(bytes, 0, bytes.Length);
     }
 }
 

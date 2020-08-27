@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
+using System.Text;
+using System.Threading;
 
 namespace Client
 {
@@ -24,12 +26,32 @@ namespace Client
 
             while(!exit)
             {
-                Console.Write(">");
                 InputParser(Console.ReadLine());
             }
 
             client.Close();
             Console.WriteLine("Shutting down...");
+        }
+
+        /// <summary>
+        /// Handle messaging with the server.
+        /// </summary>
+        /// <param name="o"></param>
+        static void ConnectionHandler()
+        {
+            NetworkStream stream = client.GetStream();
+            byte[] buffer = new byte[client.ReceiveBufferSize];
+
+            while (!exit)
+            {
+                int bytesRead = stream.Read(buffer, 0, client.ReceiveBufferSize);
+                string data = Encoding.ASCII.GetString(buffer, 0, bytesRead);
+                Console.WriteLine(data);
+            }
+
+            client.Client.Shutdown(SocketShutdown.Both);
+            client.Close();
+            Console.WriteLine("Disconnected!");
         }
 
         /// <summary>
@@ -44,7 +66,10 @@ namespace Client
             }
             else
             {
-                Console.WriteLine(input);
+                if(client.Connected)
+                {
+                    Libs.SendMessage(client.GetStream(), input);
+                }
             }
         }
 
@@ -72,6 +97,7 @@ namespace Client
                 try
                 {
                     client.Connect(address, Libs.PORT);
+                    new Thread(ConnectionHandler).Start();
                     Console.WriteLine("Connected!");
                 } 
                 catch(Exception e)
