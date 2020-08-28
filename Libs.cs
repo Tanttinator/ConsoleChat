@@ -10,6 +10,8 @@ public static class Libs
 
     public const int PORT = 13;
 
+    public const ConsoleColor DEFAULT_COLOR = ConsoleColor.White;
+
     /// <summary>
     /// Parses an inputted command.
     /// </summary>
@@ -43,6 +45,28 @@ public static class Libs
         byte[] bytes = message.GetBytes();
         stream.Write(bytes, 0, bytes.Length);
     }
+
+    /// <summary>
+    /// Print a message to the console.
+    /// </summary>
+    /// <param name="message"></param>
+    public static void DisplayMessage(Message message)
+    {
+        Console.ForegroundColor = (ConsoleColor)message.color;
+        Console.WriteLine(message);
+        Console.ForegroundColor = DEFAULT_COLOR;
+    }
+
+    /// <summary>
+    /// Print an error message to the console.
+    /// </summary>
+    /// <param name="error"></param>
+    public static void LogError(string error)
+    {
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.WriteLine(error);
+        Console.ForegroundColor = DEFAULT_COLOR;
+    }
 }
 
 public struct Message
@@ -50,9 +74,17 @@ public struct Message
     [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 100)]
     public string message;
 
-    public Message(string message)
+    [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 16)]
+    public string sender;
+
+    [MarshalAs(UnmanagedType.U1)]
+    public byte color;
+
+    public Message(string message, string sender = "", int color = 15)
     {
         this.message = message;
+        this.sender = sender;
+        this.color = (byte)color;
     }
 
     /// <summary>
@@ -94,7 +126,7 @@ public struct Message
 
     public override string ToString()
     {
-        return message;
+        return (sender.Length > 0? "[" + sender.ToUpper() + "]: " : "") + message;
     }
 }
 

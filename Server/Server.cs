@@ -21,6 +21,7 @@ namespace Server
 
         static void Main(string[] args)
         {
+            Console.ForegroundColor = Libs.DEFAULT_COLOR;
             Console.WriteLine("CONSOLECHAT DEDICATED SERVER");
 
             commands = new Dictionary<string, Command>();
@@ -81,7 +82,7 @@ namespace Server
         /// <param name="message"></param>
         static void ReceiveMessage(int client, Message message)
         {
-            Console.WriteLine(message);
+            Libs.DisplayMessage(message);
             foreach(int otherClient in clients.Keys)
             {
                 if (otherClient != client) Libs.SendMessage(clients[otherClient].GetStream(), message);
@@ -125,7 +126,7 @@ namespace Server
             }
             else
             {
-                foreach (TcpClient client in clients.Values) Libs.SendMessage(client.GetStream(), new Message(input));
+                foreach (TcpClient client in clients.Values) Libs.SendMessage(client.GetStream(), new Message(input, "Server", (int)ConsoleColor.Gray));
             }
         }
 

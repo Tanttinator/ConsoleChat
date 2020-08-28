@@ -14,14 +14,20 @@ namespace Client
 
         static TcpClient client;
 
+        static string name = "Anonymous";
+        static int color = (int)Libs.DEFAULT_COLOR;
+
         static void Main(string[] args)
         {
+            Console.ForegroundColor = Libs.DEFAULT_COLOR;
             Console.WriteLine("CONSOLECHAT CLIENT");
 
             commands = new Dictionary<string, Command>();
             commands.Add("exit", new Command(CommandExit));
             commands.Add("connect", new Command(CommandConnect));
             commands.Add("disconnect", new Command(CommandDisconnect));
+            commands.Add("name", new Command(CommandName));
+            commands.Add("color", new Command(CommandColor));
 
             while(!exit)
             {
@@ -48,7 +54,7 @@ namespace Client
                 if (bytesRead == 0) break;
 
                 Message message = Message.FromBytes(buffer);
-                Console.WriteLine(message);
+                Libs.DisplayMessage(message);
             }
 
             stream.Close();
@@ -69,7 +75,7 @@ namespace Client
             {
                 if(client.Connected)
                 {
-                    Libs.SendMessage(client.GetStream(), new Message(input));
+                    Libs.SendMessage(client.GetStream(), new Message(input, name, color));
                 }
             }
         }
@@ -92,7 +98,7 @@ namespace Client
             }
             catch (Exception e)
             {
-                Console.WriteLine("Connection failed!");
+                Libs.LogError("Connection failed!");
             }
         }
 
@@ -132,7 +138,7 @@ namespace Client
             } 
             else
             {
-                Console.WriteLine("Invalid number of arguments!");
+                Libs.LogError("Invalid number of arguments!");
             }
         }
 
@@ -144,11 +150,58 @@ namespace Client
         {
             if(!client.Connected)
             {
-                Console.WriteLine("Not connected to any server!");
+                Libs.LogError("Not connected to any server!");
                 return;
             }
 
             Disconnect();
+        }
+
+        /// <summary>
+        /// Set the name of the user.
+        /// </summary>
+        /// <param name="args"></param>
+        static void CommandName(string[] args)
+        {
+            if(args.Length > 0)
+            {
+                if (args[0].Length > 0) name = args[0];
+                else Libs.LogError("Name cannot be empty!");
+            } 
+            else
+            {
+                Libs.LogError("Invalid number of arguments!");
+            }
+        }
+
+        /// <summary>
+        /// Set the color of the users messages.
+        /// </summary>
+        /// <param name="args"></param>
+        static void CommandColor(string[] args)
+        {
+            if(args.Length > 0)
+            {
+                int newColor;
+                if(int.TryParse(args[0], out newColor))
+                {
+                    if(newColor >= 0 && newColor < 16)
+                    {
+                        color = newColor;
+                    }
+                    else
+                    {
+                        Libs.LogError("Color has to be between 0-15");
+                    }
+                }
+                else
+                {
+                    Libs.LogError("Invalid argument: " + args[0]);
+                }
+            } else
+            {
+                Libs.LogError("Invalid number of arguments!");
+            }
         }
 
         #endregion
