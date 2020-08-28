@@ -9,4 +9,8 @@
     <Compile Include="..\Libs.cs" Link="Libs.cs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="System.Runtime.InteropServices" Version="4.3.0" />
+  </ItemGroup>
+
 </Project>

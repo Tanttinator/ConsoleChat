@@ -47,8 +47,8 @@ namespace Client
 
                 if (bytesRead == 0) break;
 
-                string data = Encoding.ASCII.GetString(buffer, 0, bytesRead);
-                Console.WriteLine(data);
+                Message message = Message.FromBytes(buffer);
+                Console.WriteLine(message);
             }
 
             stream.Close();
@@ -69,7 +69,7 @@ namespace Client
             {
                 if(client.Connected)
                 {
-                    Libs.SendMessage(client.GetStream(), input);
+                    Libs.SendMessage(client.GetStream(), new Message(input));
                 }
             }
         }

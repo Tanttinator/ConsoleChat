@@ -68,8 +68,7 @@ namespace Server
 
                 if(bytesRead == 0)  break;
 
-                string data = Encoding.ASCII.GetString(buffer, 0, bytesRead);
-                ReceiveMessage(id, data);
+                ReceiveMessage(id, Message.FromBytes(buffer));
             }
 
             DisconnectClient(id);
@@ -80,7 +79,7 @@ namespace Server
         /// </summary>
         /// <param name="client"></param>
         /// <param name="message"></param>
-        static void ReceiveMessage(int client, string message)
+        static void ReceiveMessage(int client, Message message)
         {
             Console.WriteLine(message);
             foreach(int otherClient in clients.Keys)
@@ -126,7 +125,7 @@ namespace Server
             }
             else
             {
-                foreach (TcpClient client in clients.Values) Libs.SendMessage(client.GetStream(), input);
+                foreach (TcpClient client in clients.Values) Libs.SendMessage(client.GetStream(), new Message(input));
             }
         }
 
