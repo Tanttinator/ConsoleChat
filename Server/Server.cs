@@ -29,7 +29,7 @@ namespace Server
 
             listener = new TcpListener(IPAddress.Any, Libs.PORT);
             listener.Start();
-            Console.WriteLine("Server started.");
+            Libs.StatusMessage("Server started.");
 
             Thread inputThread = new Thread(InputHandler);
             inputThread.Start();
@@ -40,13 +40,13 @@ namespace Server
             {
                 TcpClient client = listener.AcceptTcpClient();
                 lock (_lock) clients.Add(count, client);
-                Console.WriteLine("New connection from " + ((IPEndPoint)client.Client.RemoteEndPoint).Address.ToString());
+                Libs.StatusMessage("New connection from " + ((IPEndPoint)client.Client.RemoteEndPoint).Address.ToString());
 
                 Thread t = new Thread(ConnectionListener);
                 t.Start(count++);
             }
 
-            Console.WriteLine("Shutting down...");
+            Libs.StatusMessage("Shutting down...");
         }
 
         /// <summary>
@@ -99,7 +99,7 @@ namespace Server
             lock (_lock) clients.Remove(id);
             client.Client.Shutdown(SocketShutdown.Both);
             client.Close();
-            Console.WriteLine("Client disconnected!");
+            Libs.StatusMessage("Client disconnected!");
         }
 
         /// <summary>

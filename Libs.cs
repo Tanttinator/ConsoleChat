@@ -58,15 +58,33 @@ public static class Libs
     }
 
     /// <summary>
-    /// Print an error message to the console.
+    /// Prints out a status message.
     /// </summary>
-    /// <param name="error"></param>
-    public static void LogError(string error)
+    /// <param name="message"></param>
+    /// <param name="type"></param>
+    public static void StatusMessage(string message, StatusType type = StatusType.NEUTRAL)
     {
-        Console.ForegroundColor = ConsoleColor.Red;
-        Console.WriteLine(error);
+        switch(type)
+        {
+            case StatusType.SUCCESS:
+                Console.ForegroundColor = ConsoleColor.Green;
+                break;
+            case StatusType.FAILURE:
+                Console.ForegroundColor = ConsoleColor.Red;
+                break;
+            default:
+                Console.ForegroundColor = ConsoleColor.DarkGray;
+                break;
+        }
+
+        Console.WriteLine(message);
         Console.ForegroundColor = DEFAULT_COLOR;
     }
+}
+
+public enum StatusType
+{
+    SUCCESS, NEUTRAL, FAILURE
 }
 
 public struct Message

@@ -35,7 +35,7 @@ namespace Client
             }
 
             Disconnect();
-            Console.WriteLine("Shutting down...");
+            Libs.StatusMessage("Shutting down...");
         }
 
         /// <summary>
@@ -86,7 +86,7 @@ namespace Client
         /// <param name="address"></param>
         static void Connect(string address)
         {
-            Console.WriteLine("Trying to connect to " + address + "...");
+            Libs.StatusMessage("Trying to connect to " + address + "...");
 
             client = new TcpClient();
 
@@ -94,11 +94,11 @@ namespace Client
             {
                 client.Connect(address, Libs.PORT);
                 new Thread(ConnectionListener).Start();
-                Console.WriteLine("Connected!");
+                Libs.StatusMessage("Connected!", StatusType.SUCCESS);
             }
             catch (Exception e)
             {
-                Libs.LogError("Connection failed!");
+                Libs.StatusMessage("Connection failed!", StatusType.FAILURE);
             }
         }
 
@@ -111,7 +111,7 @@ namespace Client
 
             client.Client.Shutdown(SocketShutdown.Both);
             client.Close();
-            Console.WriteLine("Disconnected!");
+            Libs.StatusMessage("Disconnected!");
         }
 
         #region Commands
@@ -138,7 +138,7 @@ namespace Client
             } 
             else
             {
-                Libs.LogError("Invalid number of arguments!");
+                Libs.StatusMessage("Invalid number of arguments!", StatusType.FAILURE);
             }
         }
 
@@ -150,7 +150,7 @@ namespace Client
         {
             if(!client.Connected)
             {
-                Libs.LogError("Not connected to any server!");
+                Libs.StatusMessage("Not connected to any server!", StatusType.FAILURE);
                 return;
             }
 
@@ -166,11 +166,11 @@ namespace Client
             if(args.Length > 0)
             {
                 if (args[0].Length > 0) name = args[0];
-                else Libs.LogError("Name cannot be empty!");
+                else Libs.StatusMessage("Name cannot be empty!", StatusType.FAILURE);
             } 
             else
             {
-                Libs.LogError("Invalid number of arguments!");
+                Libs.StatusMessage("Invalid number of arguments!", StatusType.FAILURE);
             }
         }
 
@@ -191,16 +191,16 @@ namespace Client
                     }
                     else
                     {
-                        Libs.LogError("Color has to be between 0-15");
+                        Libs.StatusMessage("Color has to be between 0-15", StatusType.FAILURE);
                     }
                 }
                 else
                 {
-                    Libs.LogError("Invalid argument: " + args[0]);
+                    Libs.StatusMessage("Invalid argument: " + args[0], StatusType.FAILURE);
                 }
             } else
             {
-                Libs.LogError("Invalid number of arguments!");
+                Libs.StatusMessage("Invalid number of arguments!", StatusType.FAILURE);
             }
         }
 
