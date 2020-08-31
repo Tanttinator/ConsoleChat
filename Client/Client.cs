@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
@@ -13,6 +14,7 @@ namespace Client
         static bool exit = false;
 
         static TcpClient client;
+        static Thread listener;
 
         static string name = "Anonymous";
         static int color = (int)Libs.DEFAULT_COLOR;
@@ -34,7 +36,6 @@ namespace Client
                 InputParser(Console.ReadLine());
             }
 
-            Disconnect();
             Libs.StatusMessage("Shutting down...");
         }
 
@@ -47,18 +48,25 @@ namespace Client
             NetworkStream stream = client.GetStream();
             byte[] buffer = new byte[client.ReceiveBufferSize];
 
-            while (!exit)
+            try
             {
-                int bytesRead = stream.Read(buffer, 0, client.ReceiveBufferSize);
+                while (!exit)
+                {
+                    int bytesRead = stream.Read(buffer, 0, client.ReceiveBufferSize);
 
-                if (bytesRead == 0) break;
+                    if (bytesRead == 0) break;
 
-                Message message = Message.FromBytes(buffer);
-                Libs.DisplayMessage(message);
+                    Message message = Message.FromBytes(buffer);
+                    Libs.DisplayMessage(message);
+                }
+            }
+            catch(IOException e)
+            {
+                Libs.StatusMessage(e.Message, StatusType.FAILURE);
             }
 
             stream.Close();
-            Disconnect();
+            Libs.StatusMessage("Connection lost with the server.");
         }
 
         /// <summary>
@@ -93,7 +101,8 @@ namespace Client
             try
             {
                 client.Connect(address, Libs.PORT);
-                new Thread(ConnectionListener).Start();
+                listener = new Thread(ConnectionListener);
+                listener.Start();
                 Libs.StatusMessage("Connected!", StatusType.SUCCESS);
             }
             catch (Exception e)
@@ -107,9 +116,9 @@ namespace Client
         /// </summary>
         static void Disconnect()
         {
-            if(!client.Connected) return;
+            if(client == null || !client.Connected) return;
 
-            client.Client.Shutdown(SocketShutdown.Both);
+            client.Client.Shutdown(SocketShutdown.Send);
             client.Close();
             Libs.StatusMessage("Disconnected!");
         }
@@ -122,6 +131,7 @@ namespace Client
         /// <param name="args"></param>
         static void CommandExit(string[] args)
         {
+            Disconnect();
             exit = true;
         }
 

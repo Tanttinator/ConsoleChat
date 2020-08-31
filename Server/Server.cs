@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -16,6 +17,9 @@ namespace Server
 
         static object _lock = new object();
         static Dictionary<int, TcpClient> clients = new Dictionary<int, TcpClient>();
+        static Dictionary<int, Thread> listeners = new Dictionary<int, Thread>();
+
+        static Thread inputThread;
 
         static TcpListener listener;
 
@@ -31,22 +35,28 @@ namespace Server
             listener.Start();
             Libs.StatusMessage("Server started.");
 
-            Thread inputThread = new Thread(InputHandler);
+            inputThread = new Thread(InputHandler);
             inputThread.Start();
 
             int count = 0;
 
-            while (!exit)
+            try
             {
-                TcpClient client = listener.AcceptTcpClient();
-                lock (_lock) clients.Add(count, client);
-                Libs.StatusMessage("New connection from " + ((IPEndPoint)client.Client.RemoteEndPoint).Address.ToString());
+                while (!exit)
+                {
+                    TcpClient client = listener.AcceptTcpClient();
+                    lock (_lock) clients.Add(count, client);
+                    Libs.StatusMessage("New connection from " + ((IPEndPoint)client.Client.RemoteEndPoint).Address.ToString());
 
-                Thread t = new Thread(ConnectionListener);
-                t.Start(count++);
+                    Thread t = new Thread(ConnectionListener);
+                    listeners.Add(count, t);
+                    t.Start(count++);
+                }
             }
+            catch(SocketException e)
+            {
 
-            Libs.StatusMessage("Shutting down...");
+            }
         }
 
         /// <summary>
@@ -63,16 +73,23 @@ namespace Server
             NetworkStream stream = client.GetStream();
             byte[] buffer = new byte[client.ReceiveBufferSize];
 
-            while(!exit)
+            try
             {
-                int bytesRead = stream.Read(buffer, 0, client.ReceiveBufferSize);
+                while (!exit)
+                {
+                    int bytesRead = stream.Read(buffer, 0, client.ReceiveBufferSize);
 
-                if(bytesRead == 0)  break;
+                    if (bytesRead == 0) break;
 
-                ReceiveMessage(id, Message.FromBytes(buffer));
+                    ReceiveMessage(id, Message.FromBytes(buffer));
+                }
+            }
+            catch(IOException e)
+            {
+                Libs.StatusMessage(e.Message, StatusType.FAILURE);
             }
 
-            DisconnectClient(id);
+            Libs.StatusMessage("Lost connection with the client.");
         }
 
         /// <summary>
@@ -98,6 +115,7 @@ namespace Server
             TcpClient client = clients[id];
             lock (_lock) clients.Remove(id);
             client.Client.Shutdown(SocketShutdown.Both);
+            listeners[id].Join();
             client.Close();
             Libs.StatusMessage("Client disconnected!");
         }
@@ -112,6 +130,7 @@ namespace Server
             {
                 InputParser(Console.ReadLine());
             }
+            Libs.StatusMessage("Input thread stopped.");
         }
 
         /// <summary>
@@ -130,6 +149,18 @@ namespace Server
             }
         }
 
+        /// <summary>
+        /// Close the server.
+        /// </summary>
+        static void Shutdown()
+        {
+            foreach (int id in clients.Keys) DisconnectClient(id);
+            exit = true;
+            listener.Stop();
+
+            Libs.StatusMessage("Shutting down...");
+        }
+
         #region Commands
 
         /// <summary>
@@ -138,8 +169,7 @@ namespace Server
         /// <param name="args"></param>
         static void CommandExit(string[] args)
         {
-            exit = true;
-            listener.Stop();
+            Shutdown();
         }
 
         #endregion
