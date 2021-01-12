@@ -1,2 +1,2 @@
 # ConsoleChat
-Console based chat app.
+Console based chat app using TCP.
